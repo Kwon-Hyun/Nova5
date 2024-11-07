@@ -59,12 +59,16 @@ def find_qr_orientation(contours, mc):
 
     if align == 0:
         orientation = CV_QR_UP
+
     elif slope < 0 and dist < 0:
         orientation = CV_QR_UP
+
     elif slope > 0 and dist < 0:
         orientation = CV_QR_RIGHT
+
     elif slope < 0 and dist > 0:
         orientation = CV_QR_DOWN
+        
     elif slope > 0 and dist > 0:
         orientation = CV_QR_LEFT
 
@@ -116,34 +120,36 @@ def detect_qr(image):
             print(f"{CV_QR_LEFT} 방향으로 {rotation_angle:.2f}만큼 돌리세요.")
         else:
             print(f"{CV_QR_RIGHT} 방향으로 {rotation_angle:.2f}만큼 돌리세요.")
-
-
-        # 빗변의 중심점 계산 (빗변의 중심점이 qr의 center일거라는 가정 때문.)
-        midpoint = (
-            int((mc[bottom][0] + mc[right][0]) / 2),
-            int((mc[bottom][1] + mc[right][1]) / 2)
+        
+        # QR 코드의 중심점 계산
+        qr_center = (
+            int(sum([mc[i][0] for i in range(3)]) / 3),
+            int(sum([mc[i][1] for i in range(3)]) / 3)
         )
 
-        # QR 코드 중심에 점 찍기 및 좌표 표시
-        cv.circle(image, midpoint, 5, (0, 255, 255), -1)
-        cv.putText(image, f"Center: {midpoint}", (midpoint[0] + 10, midpoint[1]),
+        # QR 코드 중심점에 점 찍기 및 좌표 표시
+        cv.circle(image, qr_center, 5, (0, 255, 255), -1)
+        cv.putText(image, f"Center: {qr_center}", (qr_center[0] + 10, qr_center[1]),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-        print(f"QR 코드 중심 좌표: {midpoint}")
+        print(f"QR 코드 중심 좌표: {qr_center}")
 
         # 위치 패턴에 외곽선 그리기
         cv.drawContours(image, contours, A, (0, 255, 0), 2)
         cv.drawContours(image, contours, B, (255, 0, 0), 2)
         cv.drawContours(image, contours, C, (0, 0, 255), 2)
-
         return image
     return None
 
-# 이미지 저장 함수
 def save_image(image, folder="qr_detection_results"):
+    # folder 없으면 생성
     if not os.path.exists(folder):
         os.makedirs(folder)
+    
+    # 파일명에 timestamp 넣어 중복 방지
     filename = f"qr_detection_{int(time.time())}.jpg"
     filepath = os.path.join(folder, filename)
+
+    # image 저장
     cv.imwrite(filepath, image)
 
 # RealSense 카메라로 QR 코드 감지
@@ -169,9 +175,10 @@ def realtime_qr_detection():
 
         cv.imshow('QR Code Detection (RGB + Depth)', images)
 
+
         save_image(images)
 
-        if cv.waitKey(1) & 0xFF == ord('q'):
+        if cv.waitKey(1) & 0xFF == ord('q'):    
             break
 
     pipe.stop()
