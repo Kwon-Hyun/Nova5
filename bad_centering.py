@@ -1,3 +1,6 @@
+# realsense_qr.py에 centering spot을 찍을 건데,
+# center 위치를 정확하게 찍기 위해 비교하기 위한 코드 (L2M notion 11/6 방법1에 있음)
+
 import pyrealsense2 as rs
 import numpy as np
 import cv2 as cv
