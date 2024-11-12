@@ -147,7 +147,6 @@ def detect_qr(image):
         else:
             cv.putText(image, "camera center로 위치 조정 필요..", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
-<<<<<<< HEAD
         
 
         # QR size (추후 distance 판단 위함)
@@ -164,13 +163,11 @@ def detect_qr(image):
         print(f"QR 외곽 사각형 가로 : {width}pixel, 세로 : {height}pixel")
 
         # 외곽 사각형 가로세로 길이 표시
-        cv.putText(image, f"Width: {width} pixel", (box[0][0], box[0][1] - 10),
+        cv.putText(image, f"가로 : {width} pixel", (box[0][0], box[0][1] - 10),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-        cv.putText(image, f"Height: {height} pixel", (box[0][0], box[0][1] - 30),
+        cv.putText(image, f"세로 : {height} pixel", (box[0][0], box[0][1] - 30),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
 
-=======
->>>>>>> origin/main
 
         # 위치 패턴에 외곽선 그리기
         cv.drawContours(image, contours, A, (0, 255, 0), 2)
