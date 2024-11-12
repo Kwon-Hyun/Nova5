@@ -9,5 +9,7 @@ Dobot Nova5 (with Realsense Depth Camera, AMB82 mini board etc.) - QR detection 
     - dobotQR.py (최종본)
 
 ## 진행 상황
+- QR code Position Pattern contouring
 - Nova5와 .py 연결 완료 (dobotQR.py)
 - QRcode Rotation, QR center detection (realsense_qr.py)
+- QRcode center detection & Camera center와 QR center 일치시키기 완료
