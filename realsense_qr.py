@@ -119,16 +119,55 @@ def detect_qr(image):
 
 
         # 빗변의 중심점 계산 (빗변의 중심점이 qr의 center일거라는 가정 때문.)
-        midpoint = (
+        qr_center = (
             int((mc[bottom][0] + mc[right][0]) / 2),
             int((mc[bottom][1] + mc[right][1]) / 2)
         )
 
         # QR 코드 중심에 점 찍기 및 좌표 표시
-        cv.circle(image, midpoint, 5, (0, 255, 255), -1)
-        cv.putText(image, f"Center: {midpoint}", (midpoint[0] + 10, midpoint[1]),
+        cv.circle(image, qr_center, 5, (0, 255, 255), -1)
+        cv.putText(image, f"Center: {qr_center}", (qr_center[0] + 10, qr_center[1]),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-        print(f"QR 코드 중심 좌표: {midpoint}")
+        print(f"QR 코드 중심 좌표: {qr_center}")
+
+        # Camera 화면 center 좌표 계산
+        frame_center = (image.shape[1] // 2, image.shape[0] // 2)
+        cv.circle(image, frame_center, 5, (255, 255, 255), -1)
+        cv.putText(image, "Camera Center", (frame_center[0] + 10, frame_center[1]),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
+
+        # QR 코드 중심과 카메라 중심 거리 계산
+        distance_to_center = cv_distance(frame_center, qr_center)
+        print(f"QRcode center와 Camera center간 거리: {distance_to_center:.2f} pixel")
+
+        # QR 코드가 중앙에 가까운지 판단
+        threshold_center_distance = 20  # 임계값 설정 (30 pixel 내외) - threshold 이하면 중앙값에 있다고 판단.
+        if distance_to_center < threshold_center_distance:
+            cv.putText(image, "QR과 camera center 일치!!", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        else:
+            cv.putText(image, "camera center로 위치 조정 필요..", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+
+        
+
+        # QR size (추후 distance 판단 위함)
+        # 외곽 사각형 그리기 & 가로, 세로 pixel 길이 측정
+        # minAreaRect, polyline, ... 등 방법 여러 가지 비교해보기
+        # minAreaRect - https://docs.opencv.org/4.x/dd/d49/tutorial_py_contour_features.html 참고
+        rect = cv.minAreaRect(np.array([mc[bottom], mc[right], mc[outlier]]))
+        box = cv.boxPoints(rect)
+        box = np.int0(box)
+        cv.drawContours(image, [box], 0, (0,0,255), 2)
+
+        width = int(rect[1][0])
+        height = int(rect[1][1])
+        print(f"QR 외곽 사각형 가로 : {width}pixel, 세로 : {height}pixel")
+
+        # 외곽 사각형 가로세로 길이 표시
+        cv.putText(image, f"Width: {width} pixel", (box[0][0], box[0][1] - 10),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        cv.putText(image, f"Height: {height} pixel", (box[0][0], box[0][1] - 30),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+
 
         # 위치 패턴에 외곽선 그리기
         cv.drawContours(image, contours, A, (0, 255, 0), 2)
@@ -142,7 +181,7 @@ def detect_qr(image):
 def save_image(image, folder="qr_detection_results"):
     if not os.path.exists(folder):
         os.makedirs(folder)
-    filename = f"qr_detection_{int(time.time())}.jpg"
+    filename = f"241111_qr_detection_{int(time.time())}.jpg"
     filepath = os.path.join(folder, filename)
     cv.imwrite(filepath, image)
 
