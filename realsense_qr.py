@@ -79,6 +79,10 @@ def detect_qr(image):
     img_canny = cv.Canny(img_gray, 100, 200)
     contours, hierarchy = cv.findContours(img_canny, cv.RETR_TREE, cv.CHAIN_APPROX_SIMPLE)
 
+
+    qr_detector = cv.QRCodeDetector()
+    data, points, _ = qr_detector.detectAndDecode(image)
+
     mark = 0
     A, B, C = None, None, None
 
@@ -147,15 +151,18 @@ def detect_qr(image):
         else:
             cv.putText(image, "camera center로 위치 조정 필요..", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
-        
 
         # QR size (추후 distance 판단 위함)
         # 외곽 사각형 그리기 & 가로, 세로 pixel 길이 측정
         # minAreaRect, polyline, ... 등 방법 여러 가지 비교해보기
         # minAreaRect - https://docs.opencv.org/4.x/dd/d49/tutorial_py_contour_features.html 참고
-        rect = cv.minAreaRect(np.array([mc[bottom], mc[right], mc[outlier]]))
+        '''
+        cnt = contours[outlier]
+        rect = cv.minAreaRect(cnt)
+        #rect = cv.minAreaRect(np.array([mc[bottom], mc[right], mc[outlier]]))
         box = cv.boxPoints(rect)
         box = np.int0(box)
+        
         cv.drawContours(image, [box], 0, (0,0,255), 2)
 
         width = int(rect[1][0])
@@ -167,12 +174,43 @@ def detect_qr(image):
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
         cv.putText(image, f"세로 : {height} pixel", (box[0][0], box[0][1] - 30),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+        '''
 
+        # Camera와 QRcode의 Distance
+        if data:
+            print(f"QR Code Data: {data}")
+            points = points[0].astype(int)
+            
+            # QR b-box 그리기
+            for i in range(4):
+                cv.line(image, tuple(points[i]), tuple(points[(i + 1) % 4]), (255, 0, 0), 3)
+            
+            # QR b-box의 가로, 세로 길이 계산
+            width = int(cv_distance(points[0], points[1]))
+            height = int(cv_distance(points[1], points[2]))
+            print(f"QR b-box 가로 : {width} pixel, 세로 : {height} pixel")
+            
+            # QR b-box 크기 표시
+            cv.putText(image, f"가로 : {width} pixel", (points[0][0], points[0][1] - 10),
+                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+            cv.putText(image, f"세로 : {height} pixel", (points[0][0], points[0][1] - 30),
+                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
+            
+            # QR 코드 4cm x 4cm 크기를 기준값으로 설정하여 distance 측정
+            target_size_pixels = 151  # 4cm = 약 151pixel
+            size_difference = (width + height) / 2 - target_size_pixels  # 일단 지금은 1차적으로 가로세로 평균크기로 비교
+            
+            if size_difference > 0:
+                print(f"QR 코드가 {abs(size_difference):.2f} pixel 거리만큼 뒤로 ㄱㄱ (멀어지기)")
+            elif size_difference < 0:
+                print(f"QR 코드가 {abs(size_difference):.2f} pixel 거리만큼 앞으로 ㄱㄱ (다가가기)")
+            else:
+                print("지금 QR이 4cm로 보이므로, 거리가 딱이에욧!! :-)")
 
         # 위치 패턴에 외곽선 그리기
-        cv.drawContours(image, contours, A, (0, 255, 0), 2)
-        cv.drawContours(image, contours, B, (255, 0, 0), 2)
-        cv.drawContours(image, contours, C, (0, 0, 255), 2)
+        cv.drawContours(image, contours, A, (0, 255, 0), 2) # green
+        cv.drawContours(image, contours, B, (255, 0, 0), 2) # red
+        cv.drawContours(image, contours, C, (0, 0, 255), 2) # blue
 
         return image
     return None
@@ -181,7 +219,7 @@ def detect_qr(image):
 def save_image(image, folder="qr_detection_results"):
     if not os.path.exists(folder):
         os.makedirs(folder)
-    filename = f"241111_qr_detection_{int(time.time())}.jpg"
+    filename = f"241113_qr_detection_{int(time.time())}.jpg"
     filepath = os.path.join(folder, filename)
     cv.imwrite(filepath, image)
 
