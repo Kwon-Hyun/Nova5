@@ -103,6 +103,7 @@ def detect_qr(image):
                 C = i
             mark += 1
 
+    # rotation하는 거는 distance하면서 좀 더 수정봐야할 거 같음.
     if mark >= 3:
         mu = [cv.moments(contours[A]), cv.moments(contours[B]), cv.moments(contours[C])]
         mc = [(mu[i]["m10"] / mu[i]["m00"], mu[i]["m01"] / mu[i]["m00"]) for i in range(3)]
@@ -132,7 +133,7 @@ def detect_qr(image):
         cv.circle(image, qr_center, 5, (0, 255, 255), -1)
         cv.putText(image, f"Center: {qr_center}", (qr_center[0] + 10, qr_center[1]),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-        print(f"QR 코드 중심 좌표: {qr_center}")
+        print(f"QR code center : {qr_center}")
 
         # Camera 화면 center 좌표 계산
         frame_center = (image.shape[1] // 2, image.shape[0] // 2)
@@ -142,14 +143,14 @@ def detect_qr(image):
 
         # QR 코드 중심과 카메라 중심 거리 계산
         distance_to_center = cv_distance(frame_center, qr_center)
-        print(f"QRcode center와 Camera center간 거리: {distance_to_center:.2f} pixel")
+        print(f"QRcode center <-> Camera center Distance : {distance_to_center:.2f} pixel")
 
         # QR 코드가 중앙에 가까운지 판단
         threshold_center_distance = 20  # 임계값 설정 (30 pixel 내외) - threshold 이하면 중앙값에 있다고 판단.
         if distance_to_center < threshold_center_distance:
-            cv.putText(image, "QR과 camera center 일치!!", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            cv.putText(image, "QR <-> camera center Ok!!", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         else:
-            cv.putText(image, "camera center로 위치 조정 필요..", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+            cv.putText(image, "Not camera center..", (50, 50), cv.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
 
 
         # QR size (추후 distance 판단 위함)
@@ -191,23 +192,39 @@ def detect_qr(image):
             print(f"QR b-box 가로 : {width} pixel, 세로 : {height} pixel")
             
             # QR b-box 크기 표시
-            cv.putText(image, f"가로 : {width} pixel", (points[0][0], points[0][1] - 10),
+            cv.putText(image, f"Width : {width} pixel", (points[0][0], points[0][1] - 10),
                     cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-            cv.putText(image, f"세로 : {height} pixel", (points[0][0], points[0][1] - 30),
+            cv.putText(image, f"Height : {height} pixel", (points[0][0], points[0][1] - 30),
                     cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
             
             # QR 코드 4cm x 4cm 크기를 기준값으로 설정하여 distance 측정
-            target_size_pixels = 151  # 4cm = 약 151pixel
-            size_difference = (width + height) / 2 - target_size_pixels  # 일단 지금은 1차적으로 가로세로 평균크기로 비교
+            target_size_pixel = 151  # 4cm = 약 151pixel
             
+            width_size_difference = width - target_size_pixel
+            height_size_difference = height - target_size_pixel
+            size_difference = (width + height) / 2 - target_size_pixel  # 일단 지금은 1차적으로 가로세로 평균크기로 비교
+            
+            if width_size_difference > 0 or height_size_difference > 0:
+                print(f"QR 코드가 {abs(size_difference):.2f} pixel 거리만큼 뒤로 ㄱㄱ (멀어지기)")
+            elif width_size_difference > 0 or height_size_difference < 0:
+                print(f"rotation에 신경써서 수직이 되도록.")
+            else:
+                print("굳굳굳")
+
+
+            #elif width_size_difference < 0 or  
+            '''
             if size_difference > 0:
                 print(f"QR 코드가 {abs(size_difference):.2f} pixel 거리만큼 뒤로 ㄱㄱ (멀어지기)")
             elif size_difference < 0:
                 print(f"QR 코드가 {abs(size_difference):.2f} pixel 거리만큼 앞으로 ㄱㄱ (다가가기)")
+            
             else:
-                print("지금 QR이 4cm로 보이므로, 거리가 딱이에욧!! :-)")
+                print("지금 QR이 4cm로 보이므로, 거리 괜찮다고 판단 !! :-)")
+            '''
+            print("\n")
 
-        # 위치 패턴에 외곽선 그리기
+        # position pattern - 외곽선 그리기
         cv.drawContours(image, contours, A, (0, 255, 0), 2) # green
         cv.drawContours(image, contours, B, (255, 0, 0), 2) # red
         cv.drawContours(image, contours, C, (0, 0, 255), 2) # blue
@@ -219,12 +236,12 @@ def detect_qr(image):
 def save_image(image, folder="qr_detection_results"):
     if not os.path.exists(folder):
         os.makedirs(folder)
-    filename = f"241113_qr_detection_{int(time.time())}.jpg"
+    filename = f"241114_qr_detection_{int(time.time())}.jpg"
     filepath = os.path.join(folder, filename)
     cv.imwrite(filepath, image)
 
 # RealSense 카메라로 QR 코드 감지
-def realtime_qr_detection():
+def realsensecam_qr_detection():
     pipe = rs.pipeline()
     cfg = rs.config()
     cfg.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 6)
@@ -255,4 +272,4 @@ def realtime_qr_detection():
     cv.destroyAllWindows()
 
 if __name__ == "__main__":
-    realtime_qr_detection()
+    realsensecam_qr_detection()
