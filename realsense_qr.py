@@ -70,6 +70,23 @@ def find_qr_orientation(contours, mc):
 
     return outlier, median1, median2, orientation, slope
 
+# QR 코드 tilt 기울기값 계산 위한 함수
+def calculate_tilt(points):
+    if points is None:
+        return None
+
+    # tilt 계산법1 - Homography 연산을 사용하는 방법
+    dst_pts = np.array([[0, 0], [100, 0], [100, 100], [0, 100]], dtype="float32")  # QRcode가 정사각형이라는 전제로.
+    h, _ = cv.findHomography(points[0], dst_pts)
+
+    # Homography 행렬로부터 기울기 값 추출
+    if h is not None:
+        tilt_angle = np.degrees(np.arctan2(h[2, 1], h[2, 2]))
+        
+        return tilt_angle
+    return None
+
+
 # QR 코드 위치 패턴 및 방향 감지 함수
 def detect_qr(image):
     img_gray = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
@@ -121,6 +138,14 @@ def detect_qr(image):
             print(f"{CV_QR_LEFT} 방향으로 {rotation_angle:.2f}만큼 돌리세요.")
         else:
             print(f"{CV_QR_RIGHT} 방향으로 {rotation_angle:.2f}만큼 돌리세요.")
+        
+
+        # QR tilt 기울기 게산
+        tilt_angle = calculate_tilt(points)
+
+        if tilt_angle is not None:
+            cv.putText(image, f"Tilt값 : {tilt_angle:.2f}도", (10, 30), cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+            print(f"QR code Tilt값 : {tilt_angle:.2f}도")
 
 
         # 빗변의 중심점 계산 (빗변의 중심점이 qr의 center일거라는 가정 때문.)
