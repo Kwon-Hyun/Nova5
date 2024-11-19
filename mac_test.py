@@ -261,7 +261,7 @@ def detect_qr(image):
 def save_image(image, folder="qr_detection_results"):
     if not os.path.exists(folder):
         os.makedirs(folder)
-    filename = f"241118_qr_detection_{int(time.time())}.jpg"
+    filename = f"241119_qr_detection_{int(time.time())}.jpg"
     filepath = os.path.join(folder, filename)
     cv.imwrite(filepath, image)
 
