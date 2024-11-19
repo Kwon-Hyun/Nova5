@@ -265,6 +265,7 @@ def save_image(image, folder="qr_detection_results"):
     filepath = os.path.join(folder, filename)
     cv.imwrite(filepath, image)
 
+'''
 # RealSense 카메라로 QR 코드 감지
 def realsensecam_qr_detection():
     pipe = rs.pipeline()
@@ -298,3 +299,36 @@ def realsensecam_qr_detection():
 
 if __name__ == "__main__":
     realsensecam_qr_detection()
+'''
+def mac_camera():
+    # Open the default camera (0)
+    cap = cv.VideoCapture(0)
+
+    if not cap.isOpened():
+        print("Error: Could not open video camera.")
+        return
+
+    print("Press 'q' to exit the QR code detection.")
+
+    while True:
+        # Read a frame from the camera
+        ret, frame = cap.read()
+        if not ret:
+            print("Failed to grab frame")
+            break
+
+        # Detect QR codes in the frame
+        decoded_objects = detect_qr(frame)
+        
+        # Display the frame
+        cv.imshow("QR test", frame)
+
+        # Exit loop if 'q' is pressed
+        if cv.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # Release the camera and close all windows
+    cap.release()
+    cv.destroyAllWindows()
+
+mac_camera()
