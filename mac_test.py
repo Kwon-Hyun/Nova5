@@ -316,9 +316,6 @@ def mac_camera():
         if not ret:
             print("Failed to grab frame")
             break
-
-        # Detect QR codes in the frame
-        decoded_objects = detect_qr(frame)
         
         # Display the frame
         cv.imshow("QR test", frame)
