@@ -1,11 +1,13 @@
 from ultralytics import YOLO
-import cv2
+import cv2 as cv
+import numpy as np
+import pyrealsense2 as rs
 
 # YOLOv8 모델 로드
 model = YOLO('model/best.pt')
 
 # 카메라 설정
-cap = cv2.VideoCapture(0)  # 0은 기본 카메라를 의미함
+cap = cv.VideoCapture(0)  # 0은 기본 카메라를 의미함
 
 while True:
     ret, frame = cap.read()
@@ -19,12 +21,12 @@ while True:
     annotated_frame = results[0].plot()
 
     # 프레임 출력
-    cv2.imshow('YOLOv8 Detection', annotated_frame)
+    cv.imshow('YOLOv8 Detection', annotated_frame)
 
     # 'q' 키를 누르면 종료
-    if cv2.waitKey(1) == ord('q'):
+    if cv.waitKey(1) == ord('q'):
         break
 
 # 카메라 끄기
 cap.release()
-cv2.destroyAllWindows()
+cv.destroyAllWindows()
