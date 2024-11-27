@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 1
+names: ['QRcode']
+
+roboflow:
+  workspace: lab2m
+  project: l2m-qrcode
+  version: 8
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/lab2m/l2m-qrcode/dataset/8
