@@ -1,24 +1,24 @@
 # Nova5 & OHT & AMR
-Dobot Nova5 (with Realsense Depth Camera, RaspberryPi Camera Module v3 etc.) - QR detection &amp; Decoding
-AMR with SLAM (Simultaneous Localization and Mapping) - QR detection &amp; Decoding
-OHT (forking, picking system with 3 camera) - QR detection &amp; Decoding
+- Dobot Nova5 (with Realsense Depth Camera, RaspberryPi Camera Module v3 etc.) - QR detection &amp; Decoding
+- AMR with SLAM (Simultaneous Localization and Mapping) - QR detection &amp; Decoding
+- OHT (forking, picking system with 3 camera) - QR detection &amp; Decoding
 
 
 ## Category 분류
-1. TCP/IP socket 통신
+<b> 1. TCP/IP socket 통신 </b>
     - create.py
     - detect.py
     - dobot.py
     - dobotQR.py
 
-2. YOLOv8 model training
+<b> 2. YOLOv8 model training </b>
     - best.pt (training by 1,027 QR images)
 
-3. test & compare
+<b> 3. test & compare
     - mac_test.py : mac 내장 webcam test
     - yolo_test.py : yolo model & 기존 Algorithm 적용 test
 
-* 최종 Source Code File
+<b> * 최종 Source Code File </b>
     - realsense_qr.py (최종본!!)
 
 ## 진행 상황
@@ -36,4 +36,4 @@ OHT (forking, picking system with 3 camera) - QR detection &amp; Decoding
     <해야할 것>
     - QRcode distance
     - QR (x, y, z)
-    - ***** SLAM path planning i.n.g . . . . . . .
+    - <b> SLAM path planning i.n.g . . . . . . .</b>
