@@ -6,19 +6,23 @@
 
 ## Category 분류
 <b> 1. TCP/IP socket 통신</b>
-    - create.py
-    - detect.py
-    - dobot.py
-    - dobotQR.py
+<br>
+    - create.py <br>
+    - detect.py <br>
+    - dobot.py <br>
+    - dobotQR.py <br>
 
 <b> 2. YOLOv8 model training</b>
-    - best.pt (training by 1,027 QR images)
+<br>
+    - best.pt (training by 1,027 QR images) <br>
 
 <b> 3. test & compare</b>
-    - mac_test.py : mac 내장 webcam test
-    - yolo_test.py : yolo model & 기존 Algorithm 적용 test
+<br>
+    - mac_test.py : mac 내장 webcam test <br>
+    - yolo_test.py : yolo model & 기존 Algorithm 적용 test <br>
 
 <b> * 최종 Source Code File</b>
+<br>
     - realsense_qr.py (최종본!!)
 
 ## 진행 상황
