@@ -6,6 +6,9 @@ import math
 # YOLOv8 모델 로드
 model = YOLO('model/best.pt')
 
+# QRcode 기준 pixel size (현재는 6cm=170pixel로 지정)
+QR_SIZE = 170   # pixel
+
 # 두 점 사이 거리 계산 함수
 def cv_distance(P, Q):
     return np.sqrt((P[0] - Q[0]) ** 2 + (P[1] - Q[1]) ** 2)
@@ -23,6 +26,9 @@ def cv_lineSlope(L, M):
 
 # QR 코드 탐지 및 중심 좌표 계산 함수
 def detect_qr_with_yolo(image, boxes):
+    qr_detector = cv.QRCodeDetector()
+    data, points, _ = qr_detector.detectAndDecode(image)
+
     for box in boxes:
         xyxy = box.xyxy.cpu().detach().numpy().tolist()[0]
         confidence = box.conf.cpu().detach().numpy().tolist()
@@ -32,12 +38,16 @@ def detect_qr_with_yolo(image, boxes):
         if class_id_list:
             class_id = int(class_id_list[0])
         else:
-            class_id = None  # 또는 적절한 기본값 설정
+            class_id = None  # 적절한 기본값 설정
 
         # b-box 좌표 추출
         x1, y1, x2, y2 = map(int, xyxy)
 
-        # yolo b-box이자 QR의 중심 좌표 계산
+        # YOLO b-box 가로, 세로 pixel 값 구하기
+        b_width = abs(x2 - x1)
+        b_height = abs(y2 - y1)
+
+        # YOLO b-box이자 QR의 중심 좌표 계산
         qr_center = ((x1 + x2) // 2, (y1 + y2) // 2)
 
         # Camera 화면 center 좌표 계산
@@ -61,6 +71,39 @@ def detect_qr_with_yolo(image, boxes):
         slope, _ = cv_lineSlope((x1, y1), (x2, y2))
         rotation_angle = np.degrees(np.arctan(slope))
 
+        #! camera와 QR의 distance (z값)
+        # QR 코드 크기에 따라 위치 조정 메시지 출력
+        
+        # b_width, b_height 평균 내서 distance 범위 구해주기
+        qr_size_mean = (b_height + b_width) // 2
+
+        if qr_size_mean > QR_SIZE:
+            distance_message = "Less than 45cm"
+
+        elif qr_size_mean >= 60 and qr_size_mean < QR_SIZE:
+            distance_message = "45cm ~ 100cm"
+
+        elif qr_size_mean >= 40 and qr_size_mean < 60:
+            distance_message = "100cm ~ 130cm"
+        
+        elif qr_size_mean >= 20 and qr_size_mean < 40:
+            distance_message = "150cm ~ 170cm"
+            
+        else:
+            distance_message = "More than 200cm"
+        
+        '''
+        # 일단 지금은 단순하게 170보다 가/세 픽셀 값이 모두 작으면 앞으로
+        # 170보다 가/세 픽셀 값이 모두 크면 뒤로. 라고 출력되게끔만 함.
+        if b_width >= QR_SIZE and b_height >= QR_SIZE:
+            distance_message = "Go Back!"
+        elif b_width < QR_SIZE or b_height < QR_SIZE:
+            distance_message = "Come Close!"
+        else:
+            distance_message = "Nice Distance !!!!!"
+        
+        '''
+
         # 결과 출력
         cv.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
         cv.circle(image, qr_center, 5, (0, 255, 255), -1)
@@ -69,6 +112,11 @@ def detect_qr_with_yolo(image, boxes):
         cv.putText(image, f"Rotation (not tilt) : {rotation_angle:.2f}", (10, 50),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         cv.putText(image, f"Distance to center (x, y) : ({center_distance_x}, {center_distance_y})", (10, 80), cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        
+        cv.putText(image, f"B-Box Width: {b_width}, B-Box Height: {b_height}", (10, 110),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        cv.putText(image, f"Status: {distance_message}", (10, 140),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
 
     return image
 
