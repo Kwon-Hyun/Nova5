@@ -7,7 +7,7 @@ import math
 model = YOLO('model/best.pt')
 
 # QRcode 기준 pixel size (현재는 6cm=170pixel로 지정)
-QR_SIZE = 170   # pixel
+QR_SIZE = 0.06   # m
 
 # 두 점 사이 거리 계산 함수
 def cv_distance(P, Q):
@@ -25,16 +25,17 @@ def cv_lineSlope(L, M):
         return 0.0, alignment
 
 # QR 코드 탐지 및 중심 좌표 계산 함수
-def detect_qr_with_yolo(image, boxes):
-    qr_detector = cv.QRCodeDetector()
-    data, points, _ = qr_detector.detectAndDecode(image)
+def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
+    # QR Decoding을 위한..
+    #qr_detector = cv.QRCodeDetector()
+    #data, points, _ = qr_detector.detectAndDecode(image)
 
     for box in boxes:
         xyxy = box.xyxy.cpu().detach().numpy().tolist()[0]
         confidence = box.conf.cpu().detach().numpy().tolist()
         class_id_list = box.cls.cpu().detach().numpy().tolist()
 
-        # class_id_list가 비어있지 않다면 첫 번째 요소를 사용
+        # class_id_list가 비어있지 않다면 첫 번째 요소 사용
         if class_id_list:
             class_id = int(class_id_list[0])
         else:
@@ -43,7 +44,7 @@ def detect_qr_with_yolo(image, boxes):
         # b-box 좌표 추출
         x1, y1, x2, y2 = map(int, xyxy)
 
-        # YOLO b-box 가로, 세로 pixel 값 구하기
+        # YOLO b-box 가로, 세로 pixel 크기 구하기
         b_width = abs(x2 - x1)
         b_height = abs(y2 - y1)
 
@@ -53,7 +54,7 @@ def detect_qr_with_yolo(image, boxes):
         # Camera 화면 center 좌표 계산
         frame_center = (image.shape[1] // 2, image.shape[0] // 2)
         
-        # center 표시
+        # Camera center 표시
         cv.circle(image, frame_center, 5, (255, 255, 255), -1)
         cv.putText(image, "Camera Center", (frame_center[0] + 10, frame_center[1]),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
@@ -72,8 +73,18 @@ def detect_qr_with_yolo(image, boxes):
         rotation_angle = np.degrees(np.arctan(slope))
 
         #! camera와 QR의 distance (z값)
-        # QR 코드 크기에 따라 위치 조정 메시지 출력
+        # QRcode 크기에 따라 distance 실시간 출력
         
+        # 3D 거리 추정: b-box 크기와 QR 코드 실제 크기 사용
+        focal_length = camera_matrix[0, 0]  # Focal length from camera matrix
+        qr_pixel_size = (b_width + b_height) / 2  # QR 코드 평균 크기 (pixel)
+        if qr_pixel_size > 0:
+            distance_z = (QR_SIZE * focal_length) / qr_pixel_size
+        else:
+            distance_z = None
+        
+        '''
+        # QR 코드 크기에 따라 위치 조정 메시지 출력
         # b_width, b_height 평균 내서 distance 범위 구해주기
         qr_size_mean = (b_height + b_width) // 2
 
@@ -91,7 +102,8 @@ def detect_qr_with_yolo(image, boxes):
             
         else:
             distance_message = "More than 200cm"
-        
+        '''
+
         '''
         # 일단 지금은 단순하게 170보다 가/세 픽셀 값이 모두 작으면 앞으로
         # 170보다 가/세 픽셀 값이 모두 크면 뒤로. 라고 출력되게끔만 함.
@@ -106,17 +118,26 @@ def detect_qr_with_yolo(image, boxes):
 
         # 결과 출력
         cv.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+
         cv.circle(image, qr_center, 5, (0, 255, 255), -1)
-        cv.putText(image, f"Center : {qr_center}", (qr_center[0] + 10, qr_center[1]),
+        cv.putText(image, f"QR Center : {qr_center}", (qr_center[0] + 10, qr_center[1]),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+        
         cv.putText(image, f"Rotation (not tilt) : {rotation_angle:.2f}", (10, 50),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        
         cv.putText(image, f"Distance to center (x, y) : ({center_distance_x}, {center_distance_y})", (10, 80), cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        
         
         cv.putText(image, f"B-Box Width: {b_width}, B-Box Height: {b_height}", (10, 110),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        
+        cv.putText(image, f"Distance Z: {distance_z:.2f}m", (qr_center[0], qr_center[1] + 30),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+        '''
         cv.putText(image, f"Status: {distance_message}", (10, 140),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
+        '''
 
     return image
 
@@ -126,6 +147,13 @@ def camera_qr_detection():
     if not cap.isOpened():
         print("카메라를 열 수 없습니다.")
         return
+    
+    #! camera matrix help~
+    # 가정된 camera matrix & 왜곡 계수 (실제 camera calibration 필요)
+    camera_matrix = np.array([[1000, 0, 640],
+                              [0, 1000, 360],
+                              [0, 0, 1]], dtype=float)
+    dist_coeffs = np.zeros((4, 1))  # 왜곡 계수 초기화
 
     while True:
         ret, frame = cap.read()
@@ -142,7 +170,8 @@ def camera_qr_detection():
         boxes = results[0].boxes
 
         # 바운딩 박스를 기반으로 QR 코드 중심 좌표 계산
-        annotated_frame = detect_qr_with_yolo(annotated_frame, boxes)
+        annotated_frame = detect_qr_with_yolo(annotated_frame, boxes, camera_matrix, dist_coeffs)
+        #annotated_frame = detect_qr_with_yolo(annotated_frame, boxes)
 
         # 결과 출력
         cv.imshow('YOLOv8 QR Detection', annotated_frame)
