@@ -1,3 +1,5 @@
+# l2mRealSenseQRClsV1 have frame center and its related frame center with QR center distance
+
 import numpy as np
 import cv2
 import pyrealsense2 as rs
@@ -50,6 +52,20 @@ class RealSenseArucoDetector:
         self.distCoeffs = np.zeros((4, 1))  # Assuming no lens distortion
 
     def aruco_display(self, corners, ids, image, rvecs, tvecs, w, h, width, height, depth_frame):
+
+        # Define frame center 
+        # Draw frame center as a blue dot
+        frame_center = (width // 2, height // 2)
+        cv2.circle(image, frame_center, 5, (255, 0, 0), -1)  
+
+
+        # Label for Frame center measurement
+        frameCenter_label = f"FrameX: {frame_center[0]}"
+        cv2.putText(image, frameCenter_label, (frame_center[0], frame_center[1] + 10), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5, (255, 0, 0), 2)
+
+        frameX = frame_center[0]
+
         if len(corners) > 0:
             ids = ids.flatten()
             for i, (markerCorner, markerID) in enumerate(zip(corners, ids)):
@@ -59,6 +75,7 @@ class RealSenseArucoDetector:
                 bottomRight = (int(bottomRight[0]), int(bottomRight[1]))
                 bottomLeft = (int(bottomLeft[0]), int(bottomLeft[1]))
                 topLeft = (int(topLeft[0]), int(topLeft[1]))
+
 
                 # Draw lines on the marker
                 cv2.line(image, topLeft, topRight, (0, 255, 0), 2)
@@ -70,14 +87,20 @@ class RealSenseArucoDetector:
                 cX = int((topLeft[0] + bottomRight[0]) / 2.0)
                 cY = int((topLeft[1] + bottomRight[1]) / 2.0)
                 cv2.circle(image, (cX, cY), 4, (0, 0, 255), -1)
+                
+                # Label for QR center point measurement
+                qrCenter_label = f"QRX: {cX}"
+                cv2.putText(image, qrCenter_label, (cX, cY + 25), cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.5, (0, 0, 255), 2)
+
+                qrX = cX
+
+
 
                 # Calculate rotation angle
                 # Use the top edge (topLeft to topRight) to determine the angle
                 angle_rad = np.arctan2(topRight[1] - topLeft[1], topRight[0] - topLeft[0])
                 angle_deg = np.degrees(angle_rad)
-
-                # change into UR rotation UR equation pi 3.14159 * ( angle_deg/180 )
-                ur_degree = 3.14159 * (angle_deg/180)
 
                 #Calculate distance
                 # Map the (x, y) coordinates back to the original image size
@@ -88,39 +111,36 @@ class RealSenseArucoDetector:
                 distance = depth_frame.get_distance(x_original, y_original)
 
 
+
+
+
+
                 # Get pose estimation (x, y, z) for the marker
                 rvec, tvec = rvecs[i][0], tvecs[i][0]
 
+
+                # Calculate the correct Euclidean distance using tvec
+                distanceN = np.sqrt(tvec[0]**2 + tvec[1]**2 + tvec[2]**2)
+
                 # Display the angle on the image
-                label = f"ID: {markerID} Angle: {angle_deg:.2f}"
+                label = f"ID: {markerID} Rotation: {angle_deg:.2f}"
                 cv2.putText(image, label, (topLeft[0], topLeft[1] - 10), cv2.FONT_HERSHEY_SIMPLEX,
                             0.5, (0, 255, 0), 2)
                 
                 # Display UR degree & distance
-                # label_degree = f"URDegree: {ur_degree:.2f} dis: {distance:.2f}"
-                label_degree = f"Distance: {distance:.2f}"
+                label_degree = f"D: {distance:.2f} &DN: {distanceN:.2f} "
                 cv2.putText(image, label_degree, (topLeft[0], topLeft[1] + 30), cv2.FONT_HERSHEY_SIMPLEX,
                             0.5, (255, 0, 0), 2)
-
 
                 pos_label = f"X: {tvec[0]:.2f} Y: {tvec[1]:.2f} Z: {tvec[2]:.2f}"
                 cv2.putText(image, pos_label, (topLeft[0], topLeft[1] + 60), cv2.FONT_HERSHEY_SIMPLEX,
                             0.5, (255, 0, 0), 2)
 
-                # Draw the axes on the marker
-                #cv2.drawFrameAxes(image, cameraMatrix, distCoeffs, rvec, tvec, 0.05)
 
-
-                #calculate tray & magzine position by reference QR code
-                # carrier_pos = f"X tray: {Xres:.2f} Y: {Yres:.2f}"
-                # cv2.putText(image, carrier_pos, (topLeft[0], topLeft[1] + 90), cv2.FONT_HERSHEY_SIMPLEX,0.5, (0, 0, 255), 2)
-
-
-
-            return image, ur_degree, distance
+            return image, distance, tvec[0], tvec[1], tvec[2], qrX , frameX, angle_deg, markerID
         else:
-            print("[Inference] No ArUco markers detected.")
-            return image, None, None
+            #print("[Inference] No ArUco markers detected.")
+            return image, None, None, None, None, None, None, None, None
 
     def get_marker_data(self):
         # Wait for a coherent pair of frames: depth and color
@@ -141,16 +161,13 @@ class RealSenseArucoDetector:
         corners, ids, _ = cv2.aruco.detectMarkers(img_resized, self.arucoDict, parameters=self.arucoParams)
         if ids is not None:
             rvecs, tvecs, _ = cv2.aruco.estimatePoseSingleMarkers(corners, self.marker_size, self.cameraMatrix, self.distCoeffs)
-            detected_markers, ur_degree, distance = self.aruco_display(corners, ids, img_resized, rvecs, tvecs, w, h, width, height, depth_frame)
+            detected_markers, distance, xValue, yValue, zValue, qrCenterX, frameCenterX, angle_deg, markerID = self.aruco_display(corners, ids, img_resized, rvecs, tvecs, w, h, width, height, depth_frame)
         else:
-            detected_markers, ur_degree, distance = self.aruco_display(corners, ids, img_resized, None, None, w, h, width, height, depth_frame)
+            detected_markers, distance, xValue, yValue, zValue, qrCenterX, frameCenterX, angle_deg, markerID = self.aruco_display(corners, ids, img_resized, None, None, w, h, width, height, depth_frame)
 
-        return detected_markers, ur_degree, distance
+        return detected_markers, distance, xValue, yValue, zValue, qrCenterX, frameCenterX, angle_deg, markerID
 
     def release(self):
         # Stop streaming and release resources
         self.pipeline.stop()
         cv2.destroyAllWindows()
-
-
-
