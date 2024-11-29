@@ -1,6 +1,8 @@
+from ultralytics import YOLO
+from pyzbar.pyzbar import decode
+
 import cv2 as cv
 import numpy as np
-from ultralytics import YOLO
 import math
 
 # YOLOv8 모델 로드
@@ -30,6 +32,11 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
     #qr_detector = cv.QRCodeDetector()
     #data, points, _ = qr_detector.detectAndDecode(image)
 
+    data = "None"
+    qr_center = None
+    frame_center = None
+    distance_z = None
+
     for box in boxes:
         xyxy = box.xyxy.cpu().detach().numpy().tolist()[0]
         confidence = box.conf.cpu().detach().numpy().tolist()
@@ -39,7 +46,7 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         if class_id_list:
             class_id = int(class_id_list[0])
         else:
-            class_id = None  # 적절한 기본값 설정
+            class_id = None  # 기본값 설정
 
         # b-box 좌표 추출
         x1, y1, x2, y2 = map(int, xyxy)
@@ -116,10 +123,22 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         
         '''
 
-        # 결과 출력
-        cv.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        #! Decoding 성공 (pyzbar 사용! QRcodeDecoder 안됨).
+        # QR 코드 영역 추출 (YOLO 바운딩 박스를 기준으로)
+        qr_roi = image[y1:y2, x1:x2]
 
-        cv.circle(image, qr_center, 5, (0, 255, 255), -1)
+        # QR decoding
+        decoded_objects = decode(qr_roi)
+
+        for obj in decoded_objects:
+            data = obj.data.decode('utf-8')
+            print(f"QR Decoded Data: {data}")
+
+        # 결과 출력
+        cv.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2) # YOLO b-box
+
+        cv.circle(image, qr_center, 5, (0, 255, 255), -1)   # QR center point
+
         cv.putText(image, f"QR Center : {qr_center}", (qr_center[0] + 10, qr_center[1]),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
         
@@ -132,14 +151,17 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         cv.putText(image, f"B-Box Width: {b_width}, B-Box Height: {b_height}", (10, 110),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         
-        cv.putText(image, f"Distance Z: {distance_z:.2f}m", (qr_center[0], qr_center[1] + 30),
+        cv.putText(image, f"QR Decoding Data : {data}", (10, 140),
+                   cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        
+        cv.putText(image, f"Distance (z): {distance_z:.2f}m", (qr_center[0], qr_center[1] + 30),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
         '''
         cv.putText(image, f"Status: {distance_message}", (10, 140),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 255), 2)
         '''
 
-    return image
+    return image, qr_center, data, distance_z
 
 # 실시간 카메라 QR 코드 탐지
 def camera_qr_detection():
@@ -149,7 +171,7 @@ def camera_qr_detection():
         return
     
     #! camera matrix help~
-    # 가정된 camera matrix & 왜곡 계수 (실제 camera calibration 필요)
+    # 임시 camera matrix & 왜곡 계수 (삼각법 활용 위해서는 실제 camera calibration 필요)
     camera_matrix = np.array([[1000, 0, 640],
                               [0, 1000, 360],
                               [0, 0, 1]], dtype=float)
@@ -163,14 +185,16 @@ def camera_qr_detection():
         
         # YOLOv8 모델로 객체 탐지
         results = model.predict(frame)
-        # tracking으로 객체 탐지
+
+        # tracking으로 객체 탐지 (tracking 일단 제외..)
         #tracking_results = model.track(source=0, show=True, tracker="default.yaml")
+
         annotated_frame = results[0].plot()
         # b-box 정보 알고 싶으면, 아래와 같이.
         boxes = results[0].boxes
 
         # 바운딩 박스를 기반으로 QR 코드 중심 좌표 계산
-        annotated_frame = detect_qr_with_yolo(annotated_frame, boxes, camera_matrix, dist_coeffs)
+        annotated_frame, qr_center, data, distance_z = detect_qr_with_yolo(annotated_frame, boxes, camera_matrix, dist_coeffs)
         #annotated_frame = detect_qr_with_yolo(annotated_frame, boxes)
 
         # 결과 출력
