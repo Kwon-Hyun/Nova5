@@ -5,8 +5,10 @@ import cv2 as cv
 import numpy as np
 import math
 import pyrealsense2 as rs
-import pyzbar
+#import pyzbar
 
+# Window 상에서는 pyzbar, zxing Library는 부가요소 설치 필요
+# Opencv의 QRDetector는 부가 설치 필요 없음. (but 내 코드에서 쓰면 YOLO랑 충돌 오류나서 안 씀.)
 
 # YOLOv8 모델 로드
 model = YOLO('model/best.pt')
