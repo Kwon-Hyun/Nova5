@@ -10,6 +10,7 @@ model = YOLO('model/best.pt')
 
 # QRcode 기준 pixel size (현재는 6cm=170pixel로 지정)
 QR_SIZE = 0.06   # m
+PIXEL_TO_MM = 0.264 # 예시 (1pixel = 0.264,,)
 
 # 두 점 사이 거리 계산 함수
 def cv_distance(P, Q):
@@ -70,10 +71,14 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         #distance_to_center = cv_distance(frame_center, qr_center)
         #print(f"QRcode center <-> Camera center Distance : {distance_to_center:.2f} pixel")
         
-        # QR 코드 중심과 카메라 중심 거리 계산 - (x, y) 형식
+        # QR 코드 중심과 카메라 중심 거리 계산 - (x, y) 형식 (단위 : Pixel)
         center_distance_x = qr_center[0] - frame_center[0]
         center_distance_y = qr_center[1] - frame_center[1]
-        print(f"QRcode center <-> Camera center Distance : {center_distance_x}, {center_distance_y} pixel")
+
+        center_distance_x_mm = center_distance_x * PIXEL_TO_MM
+        center_distance_y_mm = center_distance_y * PIXEL_TO_MM
+
+        print(f"QRcode center <-> Camera center Distance : {center_distance_x_mm}, {center_distance_y_mm} pixel")
 
         # 회전 각도 계산 (대각선 기준)
         slope, _ = cv_lineSlope((x1, y1), (x2, y2))
@@ -145,7 +150,7 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         cv.putText(image, f"Rotation (not tilt) : {rotation_angle:.2f}", (10, 50),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         
-        cv.putText(image, f"Distance to center (x, y) : ({center_distance_x}, {center_distance_y})", (10, 80), cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        cv.putText(image, f"Distance to center (x, y) : ({center_distance_x_mm}, {center_distance_y_mm})", (10, 80), cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         
         
         cv.putText(image, f"B-Box Width: {b_width}, B-Box Height: {b_height}", (10, 110),
