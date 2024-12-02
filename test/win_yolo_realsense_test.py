@@ -1,11 +1,11 @@
 from ultralytics import YOLO
-from pyzbar.pyzbar import decode
+#from pyzbar.pyzbar import decode
 
 import cv2 as cv
 import numpy as np
 import math
 import pyrealsense2 as rs
-#import pyzbar
+import pyzbar
 
 
 # YOLOv8 모델 로드
@@ -93,7 +93,7 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         else:
             distance_z = None
         
-
+        '''
         #! Decoding 성공 (pyzbar 사용! QRcodeDecoder 안됨).
         # QR 코드 영역 추출 (YOLO 바운딩 박스를 기준으로)
         qr_roi = image[y1:y2, x1:x2]
@@ -104,6 +104,7 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         for obj in decoded_objects:
             data = obj.data.decode('utf-8')
             print(f"QR Decoded Data: {data}")
+        '''
 
         # 결과 출력
         cv.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2) # YOLO b-box
@@ -122,8 +123,8 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         cv.putText(image, f"B-Box Width: {b_width}, B-Box Height: {b_height}", (10, 110),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         
-        cv.putText(image, f"QR Decoding Data : {data}", (10, 140),
-                   cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        #cv.putText(image, f"QR Decoding Data : {data}", (10, 140),
+        #           cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         
         cv.putText(image, f"Distance (z): {distance_z:.2f}m", (qr_center[0], qr_center[1] + 30),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
@@ -172,7 +173,6 @@ def camera_qr_detection():
 
         #processed_frame = detect_qr_with_yolo(color_image)
         
-
 
         # YOLOv8 모델로 객체 탐지
         #results = model.predict(color_image)
