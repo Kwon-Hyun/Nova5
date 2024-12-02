@@ -1,19 +1,20 @@
 from ultralytics import YOLO
-from pyzbar.pyzbar import decode
+#from pyzbar.pyzbar import decode
 
 import cv2 as cv
 import numpy as np
 import math
 
-from netprotocol.rbkNetProtoEnums import *
+#from netprotocol.rbkNetProtoEnums import *
 import json
 import socket
 import os
 import time
-from netprotocol.l2mRealSenseQRV1Cls import *
+import pyrealsense2 as rs
+#from netprotocol.l2mRealSenseQRV1Cls import *
 
 # Server Configuration
-HOST = '192.168.1.22'  # Localhost
+HOST = '192.168.1.21'  # Localhost
 PORT = 6601        # Port to listen on (non-privileged ports are > 1023)
 
 # YOLOv8 모델 로드
@@ -133,7 +134,7 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
             distance_message = "Nice Distance !!!!!"
         
         '''
-
+        '''
         #! Decoding 성공 (pyzbar 사용! QRcodeDecoder 안됨).
         # QR 코드 영역 추출 (YOLO 바운딩 박스를 기준으로)
         qr_roi = image[y1:y2, x1:x2]
@@ -144,6 +145,7 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         for obj in decoded_objects:
             data = obj.data.decode('utf-8')
             print(f"QR Decoded Data: {data}")
+        '''
 
         # 결과 출력
         cv.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2) # YOLO b-box
@@ -162,8 +164,8 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         cv.putText(image, f"B-Box Width: {b_width}, B-Box Height: {b_height}", (10, 110),
                    cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         
-        cv.putText(image, f"QR Decoding Data : {data}", (10, 140),
-                   cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
+        #cv.putText(image, f"QR Decoding Data : {data}", (10, 140),
+        #           cv.FONT_HERSHEY_SIMPLEX, 0.7, (255, 0, 0), 2)
         
         cv.putText(image, f"Distance (z): {distance_z:.2f}m", (qr_center[0], qr_center[1] + 30),
                    cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
@@ -176,10 +178,22 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
 
 # 실시간 카메라 QR 코드 탐지
 def camera_qr_detection():
-    cap = cv.VideoCapture(0)  # 내장 카메라 사용
-    if not cap.isOpened():
-        print("카메라를 열 수 없습니다.")
-        return
+    pipe = rs.pipeline()
+    cfg = rs.config()
+
+    cfg.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 6)
+    cfg.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 6)
+
+    pipe.start(cfg)
+
+
+    frames = pipe.wait_for_frames()
+    color_frame = frames.get_color_frame()
+    color_image = np.asanyarray(color_frame.get_data())
+
+    depth_frame = frames.get_depth_frame()
+    depth_image = np.asanyarray(depth_frame.get_data())
+
     
     #! camera matrix help~
     # 임시 camera matrix & 왜곡 계수 (삼각법 활용 위해서는 실제 camera calibration 필요)
@@ -187,15 +201,21 @@ def camera_qr_detection():
                               [0, 1000, 360],
                               [0, 0, 1]], dtype=float)
     dist_coeffs = np.zeros((4, 1))  # 왜곡 계수 초기화
+
     testFlag = 0
+
+
     while True:
-        ret, frame = cap.read()
-        if not ret:
-            print("프레임을 읽을 수 없습니다.")
-            break
+        frames = pipe.wait_for_frames()
+        color_frame = frames.get_color_frame()
+        color_image = np.asanyarray(color_frame.get_data())
+
+        depth_frame = frames.get_depth_frame()
+        depth_image = np.asanyarray(depth_frame.get_data())
+
         
         # YOLOv8 모델로 객체 탐지
-        results = model.predict(frame)
+        results = model.predict(color_image)
 
         # tracking으로 객체 탐지 (tracking 일단 제외..)
         #tracking_results = model.track(source=0, show=True, tracker="default.yaml")
@@ -212,6 +232,20 @@ def camera_qr_detection():
         if len(boxes) > 0:
             print("Detect")
             start_server()
+        
+        
+        if annotated_frame is not None:
+            images = np.hstack((annotated_frame, cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)))
+        else:
+            images = np.hstack((color_image, cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)))
+        
+
+        # 결과 출력
+        cv.imshow('YOLOv8 QR Detection', annotated_frame)
+
+        if len(boxes) > 0:
+            print("Detect")
+            start_server()
 
 
         # 결과 출력
@@ -221,7 +255,7 @@ def camera_qr_detection():
         if cv.waitKey(1) & 0xFF == ord('q'):
             break
 
-    cap.release()
+    pipe.stop()
     cv.destroyAllWindows()
 
 def start_server():
@@ -237,7 +271,7 @@ def start_server():
                 data = conn.recv(1024)
                 if not data:
                     break
-                print(f"Received: {data.decode('utf-8')}")
+                #print(f"Received: {data.decode('utf-8')}")
                 xValue = "80"
                 conn.sendall(xValue.encode())  # Echo back to the client
                 
