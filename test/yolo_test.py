@@ -78,7 +78,7 @@ def detect_qr_with_yolo(image, boxes, camera_matrix, dist_coeffs):
         center_distance_x_mm = center_distance_x * PIXEL_TO_MM
         center_distance_y_mm = center_distance_y * PIXEL_TO_MM
 
-        print(f"QRcode center <-> Camera center Distance : {center_distance_x_mm}, {center_distance_y_mm} pixel")
+        print(f"QRcode center <-> Camera center Distance : {center_distance_x_mm}, {center_distance_y_mm} mm")
 
         # 회전 각도 계산 (대각선 기준)
         slope, _ = cv_lineSlope((x1, y1), (x2, y2))
