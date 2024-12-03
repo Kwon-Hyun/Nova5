@@ -21,7 +21,7 @@ PORT = 6601        # Port to listen on (non-privileged ports are > 1023)
 model = YOLO('model/best.pt')
 
 # QRcode 기준 pixel size (현재는 6cm=170pixel로 지정)
-QR_SIZE = 0.06   # m
+QR_SIZE = 0.06   # m (= 60msm)
 
 # 두 점 사이 거리 계산 함수
 def cv_distance(P, Q):

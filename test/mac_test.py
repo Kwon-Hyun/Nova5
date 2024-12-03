@@ -12,6 +12,10 @@ CV_QR_RIGHT = "오른쪽"  # 동 1
 CV_QR_DOWN = "아래쪽"  # 남 2
 CV_QR_LEFT = "왼쪽"  # 서 3
 
+
+# QR 코드 4cm x 4cm 크기를 기준값으로 설정하여 distance 측정
+target_size_pixel = 151  # 4cm = 약 151pixel
+
 # 두 점 사이 거리 계산 함수
 def cv_distance(P, Q):
     return np.sqrt((P[0] - Q[0]) ** 2 + (P[1] - Q[1]) ** 2)
@@ -217,14 +221,12 @@ def detect_qr(image):
             print(f"QR b-box 가로 : {width} pixel, 세로 : {height} pixel")
             
             # QR b-box 크기 표시
-            cv.putText(image, f"Width : {width} pixel", (points[0][0], points[0][1] - 10),
+            cv.putText(image, f"Width : {width} px", (points[0][0], points[0][1] - 10),
                     cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
-            cv.putText(image, f"Height : {height} pixel", (points[0][0], points[0][1] - 30),
+            cv.putText(image, f"Height : {height} px", (points[0][0], points[0][1] - 30),
                     cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 1)
             
-            # QR 코드 4cm x 4cm 크기를 기준값으로 설정하여 distance 측정
-            target_size_pixel = 151  # 4cm = 약 151pixel
-            
+            '''
             width_size_difference = width - target_size_pixel
             height_size_difference = height - target_size_pixel
             size_difference = (width + height) / 2 - target_size_pixel  # 일단 지금은 1차적으로 가로세로 평균크기로 비교
@@ -235,6 +237,8 @@ def detect_qr(image):
                 print(f"rotation에 신경써서 수직이 되도록.")
             else:
                 print("굳굳굳")
+            
+            '''
 
 
             #elif width_size_difference < 0 or  
@@ -256,7 +260,7 @@ def detect_qr(image):
 
         return image
     return None
-
+'''
 # 이미지 저장 함수
 def save_image(image, folder="qr_detection_results"):
     if not os.path.exists(folder):
@@ -264,6 +268,8 @@ def save_image(image, folder="qr_detection_results"):
     filename = f"241119_qr_detection_{int(time.time())}.jpg"
     filepath = os.path.join(folder, filename)
     cv.imwrite(filepath, image)
+
+'''
 
 '''
 # RealSense 카메라로 QR 코드 감지
@@ -317,8 +323,16 @@ def mac_camera():
             print("Failed to grab frame")
             break
         
-        # Display the frame
-        cv.imshow("QR test", frame)
+        if ret is True:
+            processed_frame = detect_qr(frame)
+
+            if processed_frame is not None:
+                # Display the frame
+                cv.imshow("QR test", processed_frame)
+
+            else:
+                cv.imshow("QR test (fail)", frame)
+        
 
         # Exit loop if 'q' is pressed
         if cv.waitKey(1) & 0xFF == ord('q'):
@@ -328,4 +342,5 @@ def mac_camera():
     cap.release()
     cv.destroyAllWindows()
 
-mac_camera()
+if __name__ == "__main__":
+    mac_camera()
