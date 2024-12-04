@@ -37,4 +37,4 @@
 
     <해야할 것>
     - <b> SLAM path planning i.n.g . . . . . . .</b>
-    - 1) 내장 라이브러리 사용, 2) QR Position Pattern, 3) YOLOv8 custom training 에 대한 성능 비교 분석
+    - 1. 내장 라이브러리 사용, 2. QR Position Pattern, 3. YOLOv8 custom training 에 대한 성능 비교 분석
