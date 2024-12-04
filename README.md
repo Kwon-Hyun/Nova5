@@ -26,14 +26,15 @@
     - QRcode Position Pattern contouring
     - Nova5와 .py 연결 완료 (dobotQR.py)
     - QRcode Rotation, QR center detection
+    - QRcode center (x, y) 추출 가능
     - QRcode center detection & Camera center와 QR center 일치시키기 완료
-    - QRcode와 Camera 간 Distance 구하기 (기준 QR size : 6cm*6cm (170pixel))
+    - QRcode와 Camera 간 Distance 구하기 완료 (기준 QR size : 6cm*6cm (170pixel))
+    - QRcode 실시간 Distance(QRcode z값) 계산 가능 (단위 : m)
 
 2. with YOLOv8
     - QRcode Detection & Decoding (-> 아주 good ㅋㅋ)
     - QRcode center positioning
 
     <해야할 것>
-    - QRcode distance
-    - QR (x, y, z)
     - <b> SLAM path planning i.n.g . . . . . . .</b>
+    - 1) 내장 라이브러리 사용, 2) QR Position Pattern, 3) YOLOv8 custom training 에 대한 성능 비교 분석
