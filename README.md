@@ -54,6 +54,79 @@ project/
 
 ---
 
+## Installation
+**- ultralytics**
+
+  [참고](https://dagshub.com/Ultralytics/ultralytics/src/2b49d71772ae8e2a5ccede2127430816503bf469/docs/ko/quickstart.md)
+
+  ```
+  pip install ultralytics
+  ```
+  
+**- pyrealsense2**
+
+  [참고1](https://support.intelrealsense.com/hc/en-us/community/posts/26334072305171-pip-install-pyrealsense2-not-working)
+  
+  [참고2](https://velog.io/@zzziito/Realsense-%ED%8C%8C%EC%9D%B4%EC%8D%AC%EC%9C%BC%EB%A1%9C-%EC%82%AC%EC%9A%A9%ED%95%98%EA%B8%B0)
+
+  ```
+  # (Window) Python 3.7 ~ Python 3.11 ver 까지
+  pip install pyrealsense2
+  ```
+
+  
+**- numpy**
+
+  [참고](https://carpfish.tistory.com/entry/pip%EB%A5%BC-%EC%9D%B4%EC%9A%A9%ED%95%9C-Numpy-%EC%84%A4%EC%B9%98python3)
+
+  ```
+  # Python version 확인
+  python3 -V
+  ```
+  ```
+  # pip version 확인
+  pip3 -V
+  ```
+  ```
+  # Python3.XX인 경우
+  pip3 install numpy
+  ```
+
+  
+**- opencv**
+
+  [참고](https://foss4g.tistory.com/1500)
+
+  ```
+  # 주요 module install
+  pip install opencv-python
+  ```
+  ```
+  # 주요 module 및 추가 module install
+  pip install opencv-contrib-python
+  ```
+
+  
+**- pyzbar**
+
+  [참고](https://pypi.org/project/pyzbar/)
+
+  ```
+  pip install pyzbar
+  ```
+
+  
+**- qrcode**
+
+  [참고](https://pypi.org/project/qrcode/)
+
+  ```
+  pip install qrcode
+  ```
+
+
+---
+
 1. TCP/IP socket 통신
     - create.py
     - detect.py
