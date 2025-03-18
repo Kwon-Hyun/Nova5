@@ -73,7 +73,7 @@ project/
 
 ---
 
-## 진행 상황
+## QR 탐지 알고리즘
 **1. QR Pattern Algorithm (`pattern_review.py`)**
 - QRcode Position Pattern contouring
 - Nova5와 .py 연결 완료 (dobotQR.py)
